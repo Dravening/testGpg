@@ -22,6 +22,6 @@ func main() {
 	msg = &ConsumerMessage{
 		Headers: []*RecordHeader{&test},
 	}
-
+	fmt.Println(msg.Headers[0].Key, msg.Headers[0].Value)
 	fmt.Println(msg.Headers[0].Key, msg.Headers[0].Value)
 }
