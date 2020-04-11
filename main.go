@@ -2,26 +2,13 @@ package main
 
 import "fmt"
 
-type ConsumerMessage struct {
-	Headers []*RecordHeader
-}
-
-type RecordHeader struct {
-	Key   string
-	Value []byte
-}
-
 func main() {
-	test := RecordHeader{
-		Key: "1",
+	strings := []string{"google", "runoob"}
+	for i, s := range strings {
+		fmt.Println(i, s)
 	}
-
-	//test := RecordHeader{}
-
-	var msg *ConsumerMessage
-	msg = &ConsumerMessage{
-		Headers: []*RecordHeader{&test},
+	numbers := [6]int{1, 2, 3, 5}
+	for i, x := range numbers {
+		fmt.Printf("第 %d 位 x 的值 = %d\n", i, x)
 	}
-	fmt.Println(msg.Headers[0].Key, msg.Headers[0].Value)
-	fmt.Println(msg.Headers[0].Key, msg.Headers[0].Value)
 }
