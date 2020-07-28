@@ -1,0 +1,118 @@
+func getDevice() []common.MapStr {
+	var res []common.MapStr
+	var err error
+	timeOld := uint64(0)
+	devNew := dev{}
+	devOld := dev{}
+	netDevOld := map[string]dev{}
+	netDevNew := map[string]dev{}
+	newString := ""
+
+	utils.MakeSurePath("./log")
+	file, err := os.OpenFile("./log/net.log", os.O_RDWR|os.O_CREATE, 0755)
+	if err != nil {
+		log.Println("Failed to open the file", err)
+	}
+	netInfo, err := ioutil.ReadAll(file)
+	if err != nil {
+		log.Println("Failed to read the file", err)
+	}
+	file.Close()
+	if len(netInfo) != 0 {
+		netDevList := strings.Split(string(netInfo), "\n")
+		netDevList = netDevList[:len(netDevList)-1]
+		for _, net := range netDevList {
+			netList := strings.Split(net, ",")
+			devOld.Name = netList[0]
+			devOld.PacketsSent, err = strconv.ParseUint(netList[1], 10, 64)
+			devOld.PacketsRecv, err = strconv.ParseUint(netList[2], 10, 64)
+			devOld.BytesSent, err = strconv.ParseUint(netList[3], 10, 64)
+			devOld.BytesRecv, err = strconv.ParseUint(netList[4], 10, 64)
+			timeOld, err = strconv.ParseUint(netList[5], 10, 64)
+			netDevOld[netList[0]] = devOld
+		}
+	}
+
+	timeNow := uint64(time.Now().Unix())
+	netCards := utils.StdCmd("/bin/ksh", `ifconfig -a | grep -E '^en' |awk -F ":" '{print $1}'`)
+	netCardList := strings.Split(netCards, "\n")
+	netCardList = netCardList[:len(netCardList)-1]
+
+	for _, netCard := range netCardList {
+		str := "netstat -v " + netCard + " | grep -i -E '^packets:|^bytes:'"
+		//fmt.Println(str)
+		Out = utils.StdCmd("/bin/ksh", str)
+		//fmt.Println(Out)
+		Out = strings.Replace(Out, "Packets: ", "", -1)
+		Out = strings.Replace(Out, "Bytes: ", "", -1)
+		Out = strings.Replace(Out, "\n", " ", -1)
+		spaceRe, _ := regexp.Compile(`\s+`)
+		outList := spaceRe.Split(Out, -1)
+		//fmt.Println("outlist:", outList)
+		devNew.Name = netCard
+		devNew.PacketsSent, err = strconv.ParseUint(outList[0], 10, 64)
+		devNew.PacketsRecv, err = strconv.ParseUint(outList[1], 10, 64)
+		devNew.BytesSent, err = strconv.ParseUint(outList[2], 10, 64)
+		devNew.BytesRecv, err = strconv.ParseUint(outList[3], 10, 64)
+		devNew.SpeedPacketsSent = float64(devNew.PacketsSent-netDevOld[netCard].PacketsSent) / float64(timeNow-timeOld)
+		devNew.SpeedPacketsRecv = float64(devNew.PacketsRecv-netDevOld[netCard].PacketsRecv) / float64(timeNow-timeOld)
+		devNew.SpeedSent = (devNew.BytesSent - netDevOld[netCard].BytesSent) / (timeNow - timeOld)
+		devNew.SpeedRecv = (devNew.BytesRecv - netDevOld[netCard].BytesRecv) / (timeNow - timeOld)
+
+		//构造落盘字符串
+		newString = fmt.Sprintf("%s%s,%s,%s,%s,%s,%s\n", newString,
+			devNew.Name,
+			strconv.FormatUint(devNew.PacketsSent, 10),
+			strconv.FormatUint(devNew.PacketsRecv, 10),
+			strconv.FormatUint(devNew.BytesSent, 10),
+			strconv.FormatUint(devNew.BytesRecv, 10),
+			strconv.FormatUint(timeNow, 10),
+		)
+		netDevNew[devNew.Name] = devNew
+	}
+	//数据落盘
+	file1, err := os.OpenFile("./log/net.log", os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0755)
+	if err != nil {
+		log.Println("Failed to open the file", err)
+	}
+	defer file1.Close()
+
+	if _, err := file1.Write([]byte(newString)); err != nil {
+		log.Println("wrong happened while writing into command log file: ", err)
+	}
+
+	if len(netInfo) == 0 {
+		return res
+	}
+	fmt.Println(netDevNew)
+	for _, v := range netDevNew {
+		resOne := common.MapStr{}
+		resOne["bytesRecv"] = v.BytesRecv
+		resOne["bytesSent"] = v.BytesSent
+		resOne["packetsRecv"] = v.PacketsRecv
+		resOne["packetsSent"] = v.PacketsSent
+		resOne["dropin"] = v.Dropin
+		resOne["dropout"] = v.Dropout
+		resOne["errin"] = v.Errin
+		resOne["errout"] = v.Errout
+		resOne["fifoin"] = v.Fifoin
+		resOne["fifoout"] = v.Fifoout
+		resOne["name"] = v.Name
+		resOne["speedPacketsRecv"] = v.SpeedPacketsRecv
+		resOne["speedPacketsSent"] = v.SpeedPacketsSent
+		resOne["speedRecv"] = v.SpeedRecv
+		resOne["speedSent"] = v.SpeedSent
+		res = append(res, resOne)
+	}
+	return res
+}
+
+func MakeSurePath(path string) {
+	if !ifExist(path) {
+		err := os.MkdirAll(path, os.ModePerm)
+		if err != nil {
+			log.Println("create path failed: ", err)
+		}
+		log.Println("create path success", path)
+	}
+}
