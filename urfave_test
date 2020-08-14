@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/urfave/cli"
+	cli "github.com/urfave/cli/v2"
 	"log"
 	"os"
 	"sort"
@@ -12,23 +12,28 @@ func main() {
 	var language string
 
 	app := cli.NewApp()
-	app.Name = "GoTest"
-	app.Usage = "hello world"
-	app.Version = "1.2.3"
+	app.Name = "QQQQQQQQQQQQQQQQ"
+	app.Usage = "WWWWWWWWW"
+	app.Version = "1.2.0"
+	app.Authors = []*cli.Author{
+		{
+			Name: "draven",
+		},
+	}
 	app.Flags = []cli.Flag{
-		cli.IntFlag{
+		&cli.IntFlag{
 			Name: "port, p",
 			Value: 8000,
 			Usage: "listening port",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name: "lang, l",
 			Value: "english",
 			Usage: "read from `FILE`",
 			Destination: &language,
 		},
 	}
-	app.Commands = []cli.Command{
+	app.Commands = []*cli.Command{
 		{
 			Name: "add",
 			Aliases: []string{"a"},
@@ -53,7 +58,7 @@ func main() {
 			Name: "db",
 			Usage: "database operations",
 			Category: "database",
-			Subcommands: []cli.Command {
+			Subcommands: []*cli.Command {
 				{
 					Name: "insert",
 					Usage: "insert data",
@@ -95,12 +100,12 @@ func main() {
 
 	sort.Sort(cli.FlagsByName(app.Flags))
 
-	cli.HelpFlag = cli.BoolFlag {
+	cli.HelpFlag = &cli.BoolFlag {
 		Name: "help, h",
 		Usage: "Help!Help!",
 	}
 
-	cli.VersionFlag = cli.BoolFlag {
+	cli.VersionFlag = &cli.BoolFlag {
 		Name: "print-version, v",
 		Usage: "print version",
 	}
