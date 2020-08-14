@@ -1,0 +1,132 @@
+package main
+
+import (
+	"configcenter/src/common/json"
+	"fmt"
+	"github.com/julienschmidt/httprouter"
+
+
+	//context "golang.org/x/net/context"
+	"net/http"
+	"runtime/debug"
+)
+
+
+func main(){
+	r := httprouter.New()
+	RegRouters2(r)
+
+}
+
+//func RegRouters(r *httprouter.Router){
+//	r.GET("/", Home)
+//	r.GET("/contact",Contact)
+//}
+
+//func Home(w http.ResponseWriter, r *http.Request, params httprouter.Params){
+//	defer func(){
+//		if pr := recover();pr !=nil{
+//			fmt.Printf("panic recover,%v\n",pr)
+//			debug.PrintStack()
+//		}
+//	}()
+//	//ssssssssssssssssssss
+//}
+//
+//func Contact(w http.ResponseWriter,r *http.Request, params httprouter.Params){
+//	defer func(){
+//		if pr := recover();pr !=nil{
+//			fmt.Printf("panic recover,%v\n",pr)
+//			debug.PrintStack()
+//		}
+//	}()
+//	//ssssssssssssssssssss
+//}
+//----------------------------------------------------------------------------------------------
+func RegRouters2(r *httprouter.Router){
+	r.GET("/",PanicSolve2(Contact))
+	http.ListenAndServe(":8880", r)
+}
+
+//func PanicSolve(handle httprouter.Handle) httprouter.Handle{
+//	return func(w http.ResponseWriter,r *http.Request, p httprouter.Params){
+//		defer func(){
+//			if pr := recover();pr !=nil{
+//				fmt.Printf("panic recover,%v\n",pr)
+//				debug.PrintStack()
+//			}
+//		}()
+//		handle(w,r,p)
+//	}
+//}
+
+func PanicSolve2(handle func(ctx *Context)) httprouter.Handle{
+	return func(w http.ResponseWriter,r *http.Request, p httprouter.Params){
+		ctx := NewContext(w,r,p)
+		a,err := json.Marshal("404")
+		if err != nil{
+			fmt.Println("1111111111")
+		}
+		defer func(){
+			if pr := recover();pr !=nil{
+				fmt.Printf("panic recover,%v\n",pr)
+				debug.PrintStack()
+				ctx.responseWriter.Write(a)
+			}
+		}()
+		handle(ctx)
+	}
+}
+
+type Context struct {
+	responseWriter  http.ResponseWriter
+	request   *http.Request
+	params   httprouter.Params
+	Data    map[string]interface{}
+}
+func NewContext(w http.ResponseWriter,r *http.Request, params httprouter.Params) *Context{
+	ctx := new(Context)
+	ctx.responseWriter = w
+	ctx.request = r
+	ctx.params = params
+	ctx.Data = make(map[string]interface{})
+	return ctx
+}
+
+//func (ctx *Context)FormValue(name string)string{
+//	return ctx.request.FormValue(name)
+//}
+//
+//func (ctx *Context) FormInt64(name string) int64{
+//	value,_:= strconv.ParseInt(ctx.FormValue(name),10,64)
+//	return value
+//}
+
+func Contact(ctx *Context){
+	a,err := json.Marshal("404")
+	if err != nil{
+		fmt.Println("1111111111")
+	}
+	defer func(){
+		if pr := recover();pr !=nil{
+			fmt.Printf("panic recover,%v\n",pr)
+			ctx.responseWriter.Write(a)
+			debug.PrintStack()
+		}
+	}()
+	//ssssssssssssssssssss
+	b := 0
+	c := 2/b
+	fmt.Println(c)
+}
+
+//func Home(ctx *Context){
+//	defer func(){
+//		if pr := recover();pr !=nil{
+//			fmt.Printf("panic recover,%v\n",pr)
+//			debug.PrintStack()
+//		}
+//	}()
+//	//ssssssssssssssssssss
+//	id := ctx.FormInt64("id")
+//}
